@@ -19,6 +19,7 @@ Run via `python scripts/run_pipeline.py` (thin CLI wrapper around
 notebook -- it's meant to be the single source of truth for regenerating
 every artifact under data/processed/ and models/.
 """
+
 import json
 import time
 
@@ -50,6 +51,7 @@ from src.models.clustering import (
 
 try:
     from src.models.market_basket import build_basket_matrix, mine_association_rules
+
     _MLXTEND_AVAILABLE = True
 except ImportError:
     _MLXTEND_AVAILABLE = False
@@ -117,7 +119,9 @@ def run_full_pipeline(
     train_window, outcome_window, cutoff = time_based_split(df_clean)
     churn_features = build_churn_features(train_window, outcome_window, cutoff)
     churn_features.to_csv(config.CHURN_FEATURES_PATH, index=False)
-    print(f"Cutoff: {cutoff.date()} | churn rate: {churn_features['Churned'].mean():.1%}")
+    print(
+        f"Cutoff: {cutoff.date()} | churn rate: {churn_features['Churned'].mean():.1%}"
+    )
     summary["cutoff_date"] = str(cutoff.date())
     summary["churn_rate"] = float(churn_features["Churned"].mean())
 
@@ -143,17 +147,26 @@ def run_full_pipeline(
     joblib.dump(best_result["model"], config.CHURN_MODEL_PATH)
     joblib.dump(churn_scaler, config.CHURN_SCALER_PATH)
     with open(config.CHURN_MODEL_META_PATH, "w") as f:
-        json.dump({
-            "best_model": best_name,
-            "feature_cols": config.CHURN_FEATURE_COLS,
-            "needs_scaling": best_name == "Logistic Regression",
-            "metrics": {k: float(v) for k, v in results[best_name].items()
-                        if k not in ("model", "y_pred", "y_proba")},
-            "train_test_auc_gap": {k: float(v) for k, v in train_test_gap[best_name].items()},
-            "feature_importance": importance.to_dict(),
-            "cutoff_date": str(cutoff.date()),
-            "holdout_days": config.HOLDOUT_DAYS,
-        }, f, indent=2)
+        json.dump(
+            {
+                "best_model": best_name,
+                "feature_cols": config.CHURN_FEATURE_COLS,
+                "needs_scaling": best_name == "Logistic Regression",
+                "metrics": {
+                    k: float(v)
+                    for k, v in results[best_name].items()
+                    if k not in ("model", "y_pred", "y_proba")
+                },
+                "train_test_auc_gap": {
+                    k: float(v) for k, v in train_test_gap[best_name].items()
+                },
+                "feature_importance": importance.to_dict(),
+                "cutoff_date": str(cutoff.date()),
+                "holdout_days": config.HOLDOUT_DAYS,
+            },
+            f,
+            indent=2,
+        )
 
     summary["best_model"] = best_name
     summary["best_model_roc_auc"] = float(best_result["roc_auc"])
@@ -186,13 +199,18 @@ def run_full_pipeline(
         X_all_scaled = churn_scaler.transform(all_features[config.CHURN_FEATURE_COLS])
         proba_lookup = best_result["model"].predict_proba(X_all_scaled)[:, 1]
     else:
-        proba_lookup = best_result["model"].predict_proba(all_features[config.CHURN_FEATURE_COLS])[:, 1]
+        proba_lookup = best_result["model"].predict_proba(
+            all_features[config.CHURN_FEATURE_COLS]
+        )[:, 1]
     all_features["ChurnProbability"] = proba_lookup
-    all_features["ChurnPrediction"] = (all_features["ChurnProbability"] >= 0.5).astype(int)
+    all_features["ChurnPrediction"] = (all_features["ChurnProbability"] >= 0.5).astype(
+        int
+    )
 
     explorer = rfm.merge(
         all_features[["Customer ID", "ChurnProbability", "ChurnPrediction"]],
-        on="Customer ID", how="left",
+        on="Customer ID",
+        how="left",
     )
     explorer["RecommendedAction"] = explorer["Segment"].map(action_for)
     explorer.to_csv(config.CUSTOMER_EXPLORER_PATH, index=False)
@@ -202,6 +220,14 @@ def run_full_pipeline(
     _step(f"Pipeline complete in {elapsed:.1f}s")
     for k, v in summary.items():
         print(f"  {k}: {v}")
+
+    # Compact per-customer history for the app (keeps the big file off the host)
+    hist = (
+        df_clean.assign(Month=df_clean["InvoiceDate"].dt.to_period("M").astype(str))
+        .groupby(["Customer ID", "Month"], as_index=False)
+        .agg(Revenue=("Revenue", "sum"), Orders=("Invoice", "nunique"))
+    )
+    hist.to_csv(config.PROCESSED_DATA_DIR / "customer_history.csv", index=False)
 
     return summary
 
