@@ -199,7 +199,7 @@ What it does, in order:
 streamlit run app/streamlit_app.py
 ```
 
-Then open <https://group03-online-retail-segmenting-real-storefront.streamlit.app/>.
+Then open <https://group03-online-retail.streamlit.app/>.
 
 The app **reads only pipeline outputs** — it trains nothing, so it loads in
 seconds. If artifacts are missing it says so and tells you to run the pipeline.
