@@ -1,0 +1,21 @@
+-r requirements.txt
+# Core data stack
+openpyxl>=3.1          # reading the Online Retail II .xlsx workbook
+
+# Modelling
+scikit-learn>=1.3
+xgboost>=2.0
+mlxtend>=0.23          # market-basket / association rules (bonus task)
+joblib>=1.3
+
+# Visualization
+matplotlib>=3.7
+seaborn>=0.12
+
+
+# Notebooks (optional - only needed to open notebooks/)
+jupyter>=1.0
+ipykernel>=6.25
+
+# Tests
+pytest>=7.4
