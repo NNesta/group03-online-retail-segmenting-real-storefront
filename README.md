@@ -1,134 +1,215 @@
 # Retail CRM Analytics — Online Retail II
 
-Customer segmentation and churn prediction for a UK-based online retailer, built
-for a CRM team that needs to decide **who to court, who to win back, and who to
-let go** before the next marketing budget is set.
+Customer segmentation and churn prediction for a UK-based online retailer, developed for a CRM team that needs to understand customer value, identify customers at risk of churning, and prioritize retention activities.
 
-The project takes ~1M raw transactions, cleans them, engineers RFM features,
-segments customers with K-Means, predicts which customers will stop buying, and
-serves the whole thing through an interactive Streamlit **Customer Explorer**.
+## Project Overview
 
+This Group 03 project uses the **Online Retail II** dataset to:
+
+- Clean and prepare more than one million transaction records.
+- Explore sales, customer, product, and country-level patterns.
+- Engineer customer-level **Recency, Frequency, and Monetary (RFM)** features.
+- Segment customers using **K-Means clustering**.
+- Predict customer churn using supervised machine learning.
+- Discover product associations through market-basket analysis.
+- Provide an interactive **Streamlit Customer Explorer** application.
+
+### Project Pipeline
+
+```text
+Raw Excel data
+      │
+      ▼
+Data cleaning
+      │
+      ▼
+RFM feature engineering
+      │
+      ▼
+K-Means customer segmentation ───► PCA visualization
+      │
+      ▼
+Churn feature engineering
+      │
+      ▼
+Logistic Regression / Random Forest / XGBoost
+      │
+      ▼
+Processed outputs and trained models
+      │
+      ▼
+Streamlit Customer Explorer
 ```
-raw Excel  ──►  cleaning  ──►  RFM + K-Means segments  ──►  churn model  ──►  Streamlit app
-                                        │                        │
-                                        └── PCA plot             └── Logistic Reg / RF / XGBoost
-```
 
----
+## Contributors
 
-## Table of contents
+| Contributor | RegN0 | Focus Area | Key Contributions |
+|---|---|---|---|
+| **Nestor Ngabonziza** | **20251MBI022** | Project integration | K-Means clustering fix, Streamlit app setup, development container setup, pipeline integration, and README maintenance |
+| **Justine Mudahogora** | **20251MBI016** | Streamlit and documentation | Initial README, Streamlit dashboard structure, compiled model artifacts, and repository cleanup |
+| **Arthur Butera** | **20251MBI054** |Supervised learning and environment | Churn prediction models, project environment, requirements, and pipeline scripts |
+| **NIYOMUFASHA Emmerance** | **20251MBI019** | Streamlit support | Helper functions used by the Customer Explorer application |
+| **Nsabimana Jean Paul** | **20251MBI008** | Model Cross checking | Model test pipeline ,Unsupervised model , and final project report |
 
-- [What's in the box](#whats-in-the-box)
-- [Project structure](#project-structure)
-- [Quickstart](#quickstart)
-- [Get the data](#get-the-data)
-- [Running the pipeline](#running-the-pipeline)
-- [Running the Streamlit app](#running-the-streamlit-app)
-- [The analysis, step by step](#the-analysis-step-by-step)
-- [Outputs reference](#outputs-reference)
-- [Notebooks vs `src/`](#notebooks-vs-src)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
+Contributions included peer review, collaboration, and pull-request integration across the team.
 
----
+## Project Contents
 
-## What's in the box
-
-| Task | What was done |
+| Component | Description |
 |---|---|
-| **Data cleaning** | Duplicates, missing Customer IDs, admin stock codes, cancelled invoices (`C…`), negative quantities and zero prices all handled explicitly |
-| **EDA** | Revenue trends, top products, country mix, basket sizes, returns, Pareto check (see notebooks) |
-| **Unsupervised** | RFM features → log-transform → standardize → K-Means (k chosen by silhouette) → business-named segments → PCA visualization |
-| **Supervised** | Forward-looking churn label with a time-based cutoff (no leakage) → Logistic Regression vs Random Forest vs XGBoost → compared on accuracy/precision/recall/F1/ROC-AUC |
-| **Bonus** | Market-basket association rules (`mlxtend` apriori) — "customers who bought X also bought Y" |
-| **App** | Streamlit Customer Explorer: pick a Customer ID, see segment, RFM profile, churn probability and recommended next action |
+| Data cleaning | Handles duplicates, missing Customer IDs, administrative stock codes, cancellations, invalid quantities, and invalid prices |
+| Exploratory Data Analysis | Examines revenue trends, top products, country distribution, basket sizes, cancellations, and customer concentration |
+| Customer segmentation | Uses RFM features, transformations, K-Means clustering, business segment labels, and PCA |
+| Churn prediction | Compares Logistic Regression, Random Forest, and XGBoost using a time-based churn definition |
+| Market-basket analysis | Mines product association rules using `mlxtend` |
+| Streamlit application | Allows users to explore customer profiles, segments, churn probabilities, and recommended actions |
 
----
+## Project Structure
 
-## Project structure
-
-```
+```text
 online-retail-crm/
 ├── README.md
-├── requirements.txt           # pip dependencies
-├── environment.yml            # conda alternative
-├── Makefile                   # make install / pipeline / app / test
+├── requirements.txt
+├── environment.yml
+├── Makefile
 ├── .gitignore
 │
 ├── data/
 │   ├── raw/
-│   │   └── online_retail_II.xlsx      # source workbook (not committed by default)
-│   └── processed/                     # everything below is generated by the pipeline
-│       ├── clean_sales.csv.gz         # cleaned line-item transactions (gzipped, ~15 MB)
-│       ├── returns.csv.gz             # cancelled invoices, kept separately
-│       ├── rfm_segments.csv           # per-customer RFM + cluster + segment + PCA coords
-│       ├── segment_profile.csv        # segment-level summary + recommended action
-│       ├── churn_features.csv         # pre-cutoff features + Churned label
-│       ├── model_comparison.csv       # metrics for all three models
-│       ├── association_rules.csv      # market-basket rules (bonus)
-│       └── customer_explorer.csv      # merged table the Streamlit app reads
+│   │   └── online_retail_II.xlsx
+│   └── processed/
+│       ├── clean_sales.csv.gz
+│       ├── returns.csv.gz
+│       ├── rfm_segments.csv
+│       ├── segment_profile.csv
+│       ├── churn_features.csv
+│       ├── model_comparison.csv
+│       ├── association_rules.csv
+│       └── customer_explorer.csv
 │
-├── models/                            # generated
+├── models/
 │   ├── rfm_scaler.joblib
 │   ├── kmeans_model.joblib
 │   ├── pca_model.joblib
 │   ├── churn_scaler.joblib
 │   ├── churn_best_model.joblib
-│   └── churn_model_meta.json          # best model name, metrics, feature importance
+│   └── churn_model_meta.json
 │
-├── notebooks/                         # ORIGINAL notebooks, unmodified
+├── notebooks/
 │   ├── unsupervised_learning.ipynb
 │   └── supervised_learning.ipynb
 │
-├── src/                               # reusable code extracted from the notebooks
-│   ├── config.py                      # all paths + constants in one place
-│   ├── pipeline.py                    # orchestrates the full run
+│
+├── Report/
+│   └── Final_Project_Report.pdf
+│
+├── src/
+│   ├── config.py
+│   ├── pipeline.py
 │   ├── data/
-│   │   ├── load.py                    # read + concat both Excel sheets
-│   │   └── clean.py                   # the 9-step cleaning pipeline
+│   │   ├── load.py
+│   │   └── clean.py
 │   ├── features/
-│   │   ├── rfm.py                     # Recency / Frequency / Monetary + quintile scores
-│   │   └── churn.py                   # time-based split + forward-looking label
+│   │   ├── rfm.py
+│   │   └── churn.py
 │   └── models/
-│       ├── clustering.py              # K-Means, segment naming, profiling, PCA
-│       ├── churn.py                   # train / evaluate / compare the three models
-│       └── market_basket.py           # apriori association rules (bonus)
+│       ├── clustering.py
+│       ├── churn.py
+│       └── market_basket.py
 │
 ├── scripts/
-│   └── run_pipeline.py                # CLI entrypoint
+│   └── run_pipeline.py
 │
 ├── app/
-│   └── streamlit_app.py               # interactive Customer Explorer
+│   └── streamlit_app.py
 │
 └── tests/
-    └── test_pipeline.py               # unit tests on synthetic data
+    └── test_pipeline.py
 ```
 
----
+## Requirements
+
+- Python **3.9 or higher**
+- Python 3.11 is recommended
+- Approximately 2 GB of free memory for the complete pipeline
+- The Online Retail II Excel workbook
 
 ## Quickstart
 
+### 1. Clone the repository
+
 ```bash
-# 1. clone and enter the project
-git clone <your-repo-url>
-cd online-retail-crm
+git clone https://github.com/NNesta/group03-online-retail-segmenting-real-storefront
+cd group03-online-retail-segmenting-real-storefront
+```
 
-# 2. create an environment (pick one)
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+### 2. Create and activate an environment
+
+Using `venv`:
+
+```bash
+python -m venv .venv
+```
+
+On Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+On macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
-#   — or —
-conda env create -f environment.yml && conda activate retail-crm
+```
 
-# 3. make sure data/raw/online_retail_II.xlsx exists  (see "Get the data")
+Alternatively, using Conda:
 
-# 4. build everything
+```bash
+conda env create -f environment.yml
+conda activate retail-crm
+```
+
+### 3. Add the dataset
+
+Download the **Online Retail II** dataset from the UCI Machine Learning Repository and place it at:
+
+```text
+data/raw/online_retail_II.xlsx
+```
+
+The workbook must contain the following sheets:
+
+```text
+Year 2009-2010
+Year 2010-2011
+```
+
+### 4. Run the pipeline
+
+```bash
 python scripts/run_pipeline.py
+```
 
-# 5. explore
+### 5. Launch the Streamlit application
+
+```bash
 streamlit run app/streamlit_app.py
 ```
 
-With `make`:
+The application can also be accessed through the deployed Streamlit page:
+
+<https://group03-online-retail.streamlit.app/>
+
+## Using Make
+
+If `make` is available, the following commands can be used:
 
 ```bash
 make install
@@ -136,313 +217,357 @@ make pipeline
 make app
 ```
 
-Requires **Python 3.9+** (3.11 recommended).
+## Data Source
 
----
+The project uses the **Online Retail II** dataset from the UCI Machine Learning Repository.
 
-## Get the data
+- **Dataset:** Online Retail II
+- **Source:** UCI Machine Learning Repository
+- **Period:** December 2009 to December 2011
+- **Domain:** UK-based online retailer selling gifts and homeware
+- **Raw records:** 1,067,371 transaction lines
 
-The raw workbook is ~45 MB, so it's excluded from git by default.
+Dataset page:
 
-1. Download **Online Retail II** from the UCI repository:
-   <https://archive.ics.uci.edu/dataset/502/online+retail+ii>
-2. Place the file at:
-   ```
-   data/raw/online_retail_II.xlsx
-   ```
+<https://archive.ics.uci.edu/dataset/502/online+retail+ii>
 
-The workbook must contain the two sheets `Year 2009-2010` and `Year 2010-2011`
-(this is how UCI ships it).
+## Running the Pipeline
 
-> If you want to commit the raw file anyway, delete the `data/raw/*.xlsx` line
-> from `.gitignore` — but consider Git LFS for a file that size.
-
----
-
-## Running the pipeline
+The main pipeline can be executed with:
 
 ```bash
 python scripts/run_pipeline.py
 ```
 
-Options:
+### Available options
 
 ```bash
-python scripts/run_pipeline.py --no-market-basket   # skip the slow bonus step
+python scripts/run_pipeline.py --no-market-basket
 python scripts/run_pipeline.py --excel path/to/online_retail_II.xlsx
-python scripts/run_pipeline.py --quiet              # suppress cleaning step logs
+python scripts/run_pipeline.py --quiet
 ```
 
-**Runtime:** roughly 3–8 minutes on a laptop. Most of it is reading the Excel
-workbook (~2 min) and the market-basket step; model training itself is fast.
-
-The run is **deterministic** (`random_state=42` everywhere) and **idempotent** —
-re-running overwrites every artifact cleanly. Wipe them with `make clean`.
-
-What it does, in order:
-
-1. Loads both sheets and concatenates them.
-2. Cleans transactions → writes `clean_sales.csv.gz` and `returns.csv.gz`.
-3. Builds RFM, fits K-Means, names segments, adds PCA coords → `rfm_segments.csv`,
-   `segment_profile.csv`, and three model artifacts.
-4. Builds churn features with a time-based cutoff → `churn_features.csv`.
-5. Trains and compares three classifiers, saves the best → `model_comparison.csv`,
-   `churn_best_model.joblib`, `churn_model_meta.json`.
-6. Mines association rules → `association_rules.csv`.
-7. Merges segments + churn scores into `customer_explorer.csv` for the app.
-
----
-
-## Running the Streamlit app
-
-```bash
-streamlit run app/streamlit_app.py
-```
-
-Then open <https://group03-online-retail.streamlit.app/>.
-
-The app **reads only pipeline outputs** — it trains nothing, so it loads in
-seconds. If artifacts are missing it says so and tells you to run the pipeline.
-
-Five views:
-
-| View | What it shows |
+| Option | Description |
 |---|---|
-| **Customer Explorer** | Pick a Customer ID → segment, RFM metrics, RFM score, churn probability, recommended CRM action, position in the PCA scatter, percentile ranks, and full purchase history |
-| **Segment Overview** | Segment sizes, revenue contribution, PCA scatter of everyone, and the action cheat-sheet per segment |
-| **Churn Model** | Model comparison table and charts, best-model metrics, overfitting check, feature importance, churn risk by segment, and a filterable list of high-value customers at risk (downloadable) |
-| **Market Basket** | Association rules filterable by lift and confidence |
-| **About** | Methodology summary |
+| `--no-market-basket` | Skips the optional market-basket analysis |
+| `--excel` | Specifies a custom path to the Excel workbook |
+| `--quiet` | Suppresses cleaning-step logs |
 
----
+The pipeline is deterministic, using `random_state=42`, and is designed to be idempotent. Re-running it regenerates the processed outputs and model artifacts.
 
-## The analysis, step by step
+### Pipeline Steps
 
-### 1. Cleaning (the messy part)
+1. Load and combine both Excel sheets.
+2. Clean the transaction data.
+3. Save cleaned sales and returns data.
+4. Calculate customer-level RFM features.
+5. Fit K-Means clustering and assign business segment names.
+6. Generate PCA coordinates for visualization.
+7. Build time-based churn features and labels.
+8. Train and evaluate the three churn models.
+9. Save the best-performing model and metadata.
+10. Mine market-basket association rules.
+11. Merge customer information into the file used by the Streamlit app.
 
-The dataset is genuinely messy, and each rule below is applied explicitly in
-`src/data/clean.py`:
+## Data Cleaning
 
-| Step | Rule | Why |
+The cleaning process is implemented in `src/data/clean.py`.
+
+| Step | Action | Purpose |
 |---|---|---|
-| 1 | Fix dtypes; strip/upper-case string columns | `StockCode` casing is inconsistent |
-| 2 | Drop exact duplicate rows | ~12k duplicated line items |
-| 3 | Drop rows with no `Customer ID` | ~243k rows — can't attribute them to a customer, so they're useless for RFM |
-| 4 | Drop rows with no `Description` | |
-| 5 | Drop admin stock codes (`POST`, `DOT`, `M`, `BANK CHARGES`, `AMAZONFEE`, `TEST001`, …) | Postage, fees and adjustments aren't products and would distort revenue and basket analysis |
-| 6 | Split invoices starting with `C` into a **separate returns table** | Cancellations, kept for analysis but excluded from sales |
-| 7 | Drop `Quantity <= 0` or `Price <= 0` | Stray negatives not flagged as cancellations; zero prices are data errors |
-| 8 | Extreme price outliers | **Flagged, not dropped** — a judgement call left visible rather than silently applied |
-| 9 | Add `Revenue = Quantity × Price` | Needed downstream |
+| 1 | Fix data types and standardize string columns | Ensures consistent processing |
+| 2 | Remove exact duplicate rows | Prevents duplicate transactions from distorting results |
+| 3 | Remove rows without a Customer ID | Ensures customer-level analysis is possible |
+| 4 | Remove rows without a product description | Removes incomplete product records |
+| 5 | Remove administrative stock codes | Excludes postage, fees, adjustments, and test entries |
+| 6 | Separate cancelled invoices beginning with `C` | Keeps returns available for separate analysis |
+| 7 | Remove non-positive quantities and prices | Excludes invalid sales records |
+| 8 | Flag extreme price values | Preserves potentially meaningful outliers |
+| 9 | Add `Revenue = Quantity × Price` | Creates the main revenue measure |
 
-Roughly 1.07M raw rows → ~790k clean sales rows + ~18k returns rows.
+The complete run produced approximately:
 
-### 2. Segmentation (unsupervised)
+- **1,067,371** raw transaction rows
+- **790,721** clean sales rows
+- **17,879** returns rows
+- **5,852** customers with a Customer ID
 
-- **RFM per customer**: Recency (days since last order, measured from one day
-  after the final transaction), Frequency (distinct invoices), Monetary (total
-  revenue). Quintile scores `R_Score`/`F_Score`/`M_Score` (1–5) are added too.
-- **Log-transform** Frequency and Monetary before scaling. Both are heavily
-  right-skewed — a few whale customers would otherwise dominate the K-Means
-  distance metric entirely.
-- **Choosing k**: silhouette and inertia are computed for k=3…8. The brief asks
-  to distinguish VIPs, at-risk and one-time buyers, which needs more resolution
-  than the 3-cluster split silhouette alone tends to favour, so k is picked as
-  the best silhouette **among k≥4** — trading a little cohesion for buckets the
-  CRM team can act on differently.
-- **Naming clusters**: a rule-based RFM segment is computed per customer
-  (`VIP`, `Loyal Customer`, `New Customer`, `Win-Back Priority`, `At Risk`,
-  `Needs Attention`, `One-Time Buyer`, `Lost / Let Go`), and each K-Means cluster
-  is named after its most common rule-based segment. This grounds data-driven
-  clusters in the vocabulary a CRM team actually uses.
-- **PCA** projects the scaled RFM space to 2D for the scatter plots.
+## Customer Segmentation
 
-Each segment carries a recommended action:
+### RFM Features
 
-| Segment | Action |
-|---|---|
-| VIP | Court: white-glove service, early access, loyalty rewards |
-| Loyal Customer | Court: upsell/cross-sell, referral incentives |
-| New Customer | Court: onboarding series, second-purchase discount |
-| Win-Back Priority | Win back: personal outreach, high-value reactivation offer |
-| At Risk | Win back: targeted discount, re-engagement email flow |
-| Needs Attention | Monitor: moderate-touch nurture campaign |
-| One-Time Buyer | Convert: post-purchase follow-up, incentivize 2nd order |
-| Lost / Let Go | Let go: exclude from paid marketing, low-cost win-back only |
+For each customer, the following features are calculated:
 
-### 3. Churn prediction (supervised)
+- **Recency:** Number of days since the customer’s most recent order.
+- **Frequency:** Number of distinct invoices placed.
+- **Monetary:** Total revenue generated by the customer.
 
-**Target.** Will a customer who was active *before* a cutoff date make at least
-one more purchase in the **180 days after** it? If not, they're labelled
-`Churned = 1`.
+Frequency and Monetary are log-transformed before standardization because both variables are strongly right-skewed.
 
-**No leakage.** The cutoff is `last transaction date − 180 days`. Features are
-computed **only** from transactions before the cutoff; the label is computed
-**only** from transactions after it. The model never sees the window it's
-predicting.
+### Clustering Method
 
-**Features** (9): `Recency`, `Frequency`, `Monetary`, `Tenure`,
-`UniqueProducts`, `TotalItems`, `AvgOrderValue`, `AvgItemsPerOrder`,
-`PurchaseRate`.
+K-Means clustering is evaluated for values of `k` from 3 to 8. The final solution uses:
 
-**Models compared** (three, as required):
+```text
+k = 5
+```
 
-| Model | Notes |
-|---|---|
-| Logistic Regression | Trained on standardized features; interpretable coefficients / odds ratios |
-| Random Forest | 300 trees, `max_depth=8` |
-| XGBoost | 300 estimators, depth 4, lr 0.05, subsampling + L2 + `gamma` regularization |
+The choice balances clustering quality with the CRM requirement for sufficiently detailed and actionable customer groups.
 
-Evaluated on a stratified 25% test split with accuracy, precision, recall, F1 and
-ROC-AUC, plus a **train-vs-test AUC gap** as an overfitting check. The best model
-by ROC-AUC is saved to `models/churn_best_model.joblib` and used by the app.
+PCA is used to project the standardized RFM space into two dimensions for visualization.
 
-### 4. Market basket (bonus)
+### Customer Segments
 
-`mlxtend`'s apriori over a one-hot invoice × product matrix, restricted to the
-top 200 best-selling products in the UK (the dominant market) to keep the search
-tractable and the rules readable. Rules are ranked by lift and filtered
-interactively in the app.
-
----
-
-## Results
-
-Numbers below are from a full run on the complete dataset
-(1,067,371 raw rows → 790,721 clean sales rows + 17,879 returns rows,
-5,852 customers with a Customer ID).
-
-### Segments (k=5, chosen by silhouette among k≥4)
-
-| Segment | Customers | % of base | Avg recency (days) | Avg orders | Avg spend | % of revenue |
+| Segment | Customers | % of Base | Avg. Recency (Days) | Avg. Orders | Avg. Spend (£) | % of Revenue |
 |---|---:|---:|---:|---:|---:|---:|
-| VIP | 900 | 15.4% | 42 | 22.8 | £13,537 | **70.1%** |
-| Loyal Customer | 1,692 | 28.9% | 64 | 5.7 | £1,941 | 18.9% |
-| At Risk | 840 | 14.4% | 394 | 3.4 | £1,291 | 6.2% |
-| One-Time Buyer | 1,340 | 22.9% | 99 | 1.7 | £412 | 3.2% |
-| Lost / Let Go | 1,080 | 18.5% | 521 | 1.2 | £254 | 1.6% |
+| VIP | 900 | 15.4% | 42 | 22.8 | 13,537 | 70.1% |
+| Loyal Customer | 1,692 | 28.9% | 64 | 5.7 | 1,941 | 18.9% |
+| At Risk | 840 | 14.4% | 394 | 3.4 | 1,291 | 6.2% |
+| One-Time Buyer | 1,340 | 22.9% | 99 | 1.7 | 412 | 3.2% |
+| Lost / Let Go | 1,080 | 18.5% | 521 | 1.2 | 254 | 1.6% |
 
-**The headline for the CRM team:** 15% of customers generate 70% of revenue.
-Protecting the VIP block matters more than anything else in the budget. The
-840 At Risk customers averaged 3.4 orders and £1,291 each before going quiet
-for over a year — that's the win-back list. The 1,080 Lost / Let Go customers
-account for 1.6% of revenue between them, and are the obvious place to cut
-paid spend.
+### Suggested CRM Actions
 
-### Churn model
+| Segment | Suggested Action |
+|---|---|
+| VIP | White-glove service, early access, and loyalty rewards |
+| Loyal Customer | Upselling, cross-selling, and referral incentives |
+| At Risk | Targeted discounts and re-engagement campaigns |
+| One-Time Buyer | Post-purchase follow-up and second-order incentives |
+| Lost / Let Go | Low-cost automated win-back communication and limited paid retention spend |
 
-Target: no purchase in the 180 days after the **2011-06-12** cutoff.
-Base rate: 48.1% churned.
+## Churn Prediction
 
-| Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
+### Prediction Definition
+
+A customer is labelled as **churned** if they make no purchase during the 180 days following the selected cutoff date.
+
+The model uses only information available before the cutoff date to avoid data leakage.
+
+### Features
+
+The churn models use nine customer-level features:
+
+```text
+Recency
+Frequency
+Monetary
+Tenure
+UniqueProducts
+TotalItems
+AvgOrderValue
+AvgItemsPerOrder
+PurchaseRate
+```
+
+### Models Compared
+
+| Model | Description |
+|---|---|
+| Logistic Regression | Interpretable baseline trained on standardized features |
+| Random Forest | Ensemble of decision trees that captures non-linear relationships |
+| XGBoost | Gradient-boosted tree model with regularization |
+
+The models are evaluated using a stratified 25% test split and the following metrics:
+
+- Accuracy
+- Precision
+- Recall
+- F1-score
+- ROC-AUC
+
+### Model Results
+
+| Model | Accuracy | Precision | Recall | F1-score | ROC-AUC |
 |---|---:|---:|---:|---:|---:|
 | Logistic Regression | 0.726 | 0.722 | 0.699 | 0.711 | 0.797 |
-| **Random Forest** | 0.725 | 0.706 | 0.734 | 0.720 | **0.807** |
+| **Random Forest** | **0.725** | 0.706 | 0.734 | 0.720 | **0.807** |
 | XGBoost | 0.725 | 0.702 | 0.741 | 0.721 | 0.804 |
 
-Random Forest wins on ROC-AUC, but the three are close enough that the choice
-is nearly a coin flip — Logistic Regression is within 0.01 AUC and far more
-interpretable, and XGBoost has the best recall (0.741), which is arguably what
-a win-back campaign should optimize for: missing a churner costs more than
-emailing someone who would have stayed anyway.
+Random Forest achieved the highest ROC-AUC in the reported evaluation and was saved as the best model. XGBoost achieved the highest recall, while Logistic Regression remained the most interpretable model.
 
-Most predictive features (Random Forest Gini importance): `Recency` (0.23),
-`PurchaseRate` (0.18), `Monetary` (0.14), `TotalItems` (0.13).
+### Most Important Churn Features
 
-**One caveat worth stating plainly:** the Random Forest train AUC is 0.924 vs
-0.807 on test — a 0.12 gap, so it is fitting noise despite `max_depth=8`.
-The test metric is the honest one. Tightening depth or adding
-`min_samples_leaf` would narrow the gap, and is the first thing to try if this
-were going to production.
+The most influential features in the Random Forest model were:
 
-### Market basket
+| Feature | Importance |
+|---|---:|
+| Recency | 0.23 |
+| PurchaseRate | 0.18 |
+| Monetary | 0.14 |
+| TotalItems | 0.13 |
 
-50 rules mined over the top 200 UK products. The strongest are complementary
-product families — e.g. the hand-warmer designs co-occur at roughly 14× lift,
-which supports bundling them rather than discounting them individually.
+Recency was the strongest predictor, indicating that the time since a customer’s last purchase is particularly important for identifying potential churn.
 
----
+## Market-Basket Analysis
 
-## Outputs reference
+The bonus market-basket analysis uses `mlxtend`'s Apriori algorithm on a one-hot invoice-by-product matrix.
 
-| File | Grain | Key columns |
-|---|---|---|
-|  `data/processed/clean_sales.csv.gz` | line item | `Invoice`, `StockCode`, `Description`, `Quantity`, `InvoiceDate`, `Price`, `Customer ID`, `Country`, `Revenue` |
-|  `data/processed/returns.csv.gz` | line item | same, for cancelled invoices |
-| `data/processed/rfm_segments.csv` | customer | `Recency`, `Frequency`, `Monetary`, `R/F/M_Score`, `Cluster`, `RuleSegment`, `Segment`, `PCA1`, `PCA2` |
-| `data/processed/segment_profile.csv` | segment | `Customers`, `AvgRecency/Frequency/Monetary`, `TotalRevenue`, `PctCustomers`, `PctRevenue`, `RecommendedAction` |
-| `data/processed/churn_features.csv` | customer | 9 features + `Churned` |
-| `data/processed/model_comparison.csv` | model | `accuracy`, `precision`, `recall`, `f1`, `roc_auc` |
-| `data/processed/association_rules.csv` | rule | `antecedents`, `consequents`, `support`, `confidence`, `lift` |
-| `data/processed/customer_explorer.csv` | customer | segments + `ChurnProbability`, `ChurnPrediction`, `RecommendedAction` |
-| `models/churn_model_meta.json` | — | best model name, metrics, AUC gap, feature importance, cutoff date |
+To keep the analysis tractable, it is restricted to the top 200 best-selling products in the UK market.
 
----
+The resulting association rules include:
 
-## Notebooks vs `src/`
+- Antecedents
+- Consequents
+- Support
+- Confidence
+- Lift
 
-The two notebooks in `notebooks/` are the **original exploratory work, left
-untouched**. They're the record of the EDA and the reasoning behind each
-decision, and they're worth reading for the charts.
+The Streamlit application allows users to filter the rules by lift and confidence.
 
-Everything reusable was **extracted and refactored** into `src/` — no logic was
-changed, only reorganized:
+## Streamlit Customer Explorer
 
-| Notebook section | Extracted to |
+The Streamlit application reads the outputs generated by the pipeline and does not retrain the models.
+
+It contains five main views:
+
+| View | Description |
 |---|---|
-| Excel loading cells | `src/data/load.py` |
-| "Data Cleaning" steps 1–9 (identical in both notebooks) | `src/data/clean.py` |
-| "1. RFM feature engineering" | `src/features/rfm.py` |
-| "2. K-Means clustering", "3. business segment names", "4. profiles", "5. PCA", "6. action cheat-sheet" | `src/models/clustering.py` |
-| "1. Time-based split", "2. Build features", "3. Label" | `src/features/churn.py` |
-| "4. Train/test split" through "13. Feature importance" | `src/models/churn.py` |
-| *(not in the notebooks)* | `src/models/market_basket.py` — the bonus task, added fresh |
+| **Customer Explorer** | Search for a customer and view segment, RFM metrics, churn probability, recommended action, PCA position, percentile ranks, and purchase history |
+| **Segment Overview** | Explore segment sizes, revenue contribution, PCA visualization, and recommended actions |
+| **Churn Model** | Review model performance, feature importance, overfitting checks, and high-value customers at risk |
+| **Market Basket** | Explore product association rules using lift and confidence filters |
+| **About** | View a summary of the methodology |
 
-Each module's docstring quotes the notebook cell it came from, so the two are
-easy to cross-check. The duplicated cleaning code that appeared in *both*
-notebooks now exists once.
+If the required pipeline artifacts are missing, the application displays setup instructions.
 
+## Outputs Reference
 
+| File | Level | Main Contents |
+|---|---|---|
+| `data/processed/clean_sales.csv.gz` | Transaction line | Clean sales transactions and revenue |
+| `data/processed/returns.csv.gz` | Transaction line | Cancelled invoices |
+| `data/processed/rfm_segments.csv` | Customer | RFM values, scores, cluster, segment, and PCA coordinates |
+| `data/processed/segment_profile.csv` | Segment | Segment statistics and recommended actions |
+| `data/processed/churn_features.csv` | Customer | Churn features and churn label |
+| `data/processed/model_comparison.csv` | Model | Accuracy, precision, recall, F1-score, and ROC-AUC |
+| `data/processed/association_rules.csv` | Product rule | Support, confidence, and lift |
+| `data/processed/customer_explorer.csv` | Customer | Segment, churn probability, prediction, and recommended action |
+| `models/churn_model_meta.json` | Model metadata | Best model, metrics, AUC gap, and feature importance |
 
-Plotting was intentionally left in the notebooks: the `src/` modules return
-DataFrames and fitted objects rather than calling `plt.show()`, which is what
-makes them importable by both the pipeline and Streamlit.
+## Notebooks and Source Code
 
----
+The notebooks contain the original exploratory analysis and visualizations:
+
+```text
+notebooks/unsupervised_learning.ipynb
+notebooks/supervised_learning.ipynb
+```
+
+Reusable logic was extracted into the `src/` package:
+
+| Functionality | Module |
+|---|---|
+| Data loading | `src/data/load.py` |
+| Data cleaning | `src/data/clean.py` |
+| RFM engineering | `src/features/rfm.py` |
+| Churn feature engineering | `src/features/churn.py` |
+| Clustering and PCA | `src/models/clustering.py` |
+| Churn model training and evaluation | `src/models/churn.py` |
+| Market-basket analysis | `src/models/market_basket.py` |
+| Pipeline orchestration | `src/pipeline.py` |
+
+The refactored clustering implementation also ensures that every customer receives a valid segment label, including cases where multiple clusters initially receive the same business label.
 
 ## Testing
+
+Run the test suite with:
 
 ```bash
 pytest -q
 ```
 
-12 tests run on a small synthetic transaction table — no need for the 45 MB
-workbook, and they finish in about a second. They cover:
+The tests use a small synthetic transaction dataset and cover:
 
-- every cleaning rule (duplicates, missing IDs, admin codes, cancellations split
-  out rather than deleted, non-positive quantities/prices, `Revenue` correctness)
-- cleaning idempotency
-- RFM values against hand-computed expectations, and the default snapshot date
-- all eight business-segment rules, including the `Frequency == 1` short-circuit
-- the time-based split partitioning cleanly at the cutoff, the churn label
-  matching "no purchase in the outcome window", and no negative recencies
-  (a leakage smoke test)
+- Data cleaning rules
+- Duplicate removal
+- Missing Customer ID handling
+- Administrative stock-code removal
+- Cancellation separation
+- Invalid quantity and price handling
+- Revenue calculation
+- Cleaning idempotency
+- RFM calculations
+- Business segment rules
+- Time-based churn splitting
+- Churn label correctness
+- Leakage checks
+- Segment-label assignment
+
+## Troubleshooting
+
+### Raw data not found
+
+Ensure the workbook is located at:
+
+```text
+data/raw/online_retail_II.xlsx
+```
+
+Alternatively, provide a custom path:
+
+```bash
+python scripts/run_pipeline.py --excel path/to/online_retail_II.xlsx
+```
+
+### `ModuleNotFoundError: No module named 'src'`
+
+Run commands from the project root:
+
+```bash
+python scripts/run_pipeline.py
+streamlit run app/streamlit_app.py
+```
+
+### Streamlit reports missing artifacts
+
+Run the pipeline first:
+
+```bash
+python scripts/run_pipeline.py
+```
+
+### Pipeline is slow or runs out of memory
+
+The Excel import is the main bottleneck and may require approximately 2 GB of free memory.
+
+You can skip the optional market-basket step:
+
+```bash
+python scripts/run_pipeline.py --no-market-basket
+```
+
+### No association rules are found
+
+Lower the `min_support` or `min_confidence` settings in the market-basket configuration.
+
+## Limitations and Future Work
+
+The project has several limitations:
+
+1. The UK accounts for most of the dataset’s revenue, so the findings mainly represent UK customer behavior.
+2. The features are primarily transaction-based and do not include marketing interactions, customer service contacts, demographics, or product preferences.
+3. Tree-based models show a train-test performance gap, indicating some overfitting.
+4. The 180-day churn window is a business-defined threshold and may affect the results.
+5. Segment and churn labels should be used for marketing prioritization, not to reduce the quality of customer service.
+
+Potential future improvements include:
+
+- Integrating marketing campaign and customer service data.
+- Testing alternative churn windows, such as 90 and 365 days.
+- Improving tree-model regularization.
+- Evaluating the impact of retention campaigns.
+- Developing an internal dashboard for direct customer lookup and monitoring.
+
+## References
+
+1. Chen, D., & UCI Machine Learning Repository. **Online Retail II Data Set**.  
+   <https://archive.ics.uci.edu/dataset/502/online+retail+ii>
+
+2. Pedregosa, F., et al. (2011). **Scikit-learn: Machine Learning in Python**. *Journal of Machine Learning Research, 12*, 2825–2830.
+
+3. Chen, T., & Guestrin, C. (2016). **XGBoost: A Scalable Tree Boosting System**. *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining*.
 
 ---
 
-
-
-**Pipeline is slow / runs out of memory** — the Excel read is the bottleneck and
-needs ~2 GB free. Use `--no-market-basket` to skip the heaviest optional step,
-or lower `top_n_products` in `src/models/market_basket.py`.
-
-**No association rules found** — lower `min_support` (try `0.01`) or
-`min_confidence` in the market-basket call inside `src/pipeline.py`.
-
----
-
-## Data source
-
-Online Retail II, UCI Machine Learning Repository —
-<https://archive.ics.uci.edu/dataset/502/online+retail+ii>
-Over 1,000,000 transactions from a UK-based online retailer, Dec 2009 – Dec 2011.
+**Group 03 — Retail CRM Analytics**
