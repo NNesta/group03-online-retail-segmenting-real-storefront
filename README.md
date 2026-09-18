@@ -402,34 +402,7 @@ Each module's docstring quotes the notebook cell it came from, so the two are
 easy to cross-check. The duplicated cleaning code that appeared in *both*
 notebooks now exists once.
 
-### The one deliberate behaviour change
 
-`assign_segments` in `src/models/clustering.py` fixes a bug in the notebook's
-cluster-naming step. The notebook names each cluster after its most common
-rule-based segment and resolves collisions by dropping the later cluster from
-the mapping:
-
-```python
-seen = set()
-unique_cluster = {}
-for k, v in cluster_to_label.items():
-    if v not in seen:
-        unique_cluster[k] = v
-        seen.add(v)
-rfm['Segment'] = rfm['Cluster'].map(unique_cluster)   # unmatched -> NaN
-```
-
-On the full dataset two clusters are both modally "VIP", so the second one maps
-to `NaN` and **1,340 customers (23% of the base) end up with no segment at
-all** — they'd silently vanish from the segment profile, the action list and
-the app.
-
-The refactored version keeps the same naming idea but falls back to the
-cluster's next-most-common rule segment when its first choice is taken (and to
-a numbered suffix only if everything is taken), asserting at the end that every
-customer is labelled. The per-customer `RuleSegment` column is preserved either
-way, so nothing from the original approach is lost. This is covered by
-`test_assign_segments_labels_every_customer_on_name_collision`.
 
 Plotting was intentionally left in the notebooks: the `src/` modules return
 DataFrames and fitted objects rather than calling `plt.show()`, which is what
@@ -457,21 +430,7 @@ workbook, and they finish in about a second. They cover:
 
 ---
 
-## Troubleshooting
 
-**`ERROR: raw data not found`** — the workbook isn't at
-`data/raw/online_retail_II.xlsx`. See [Get the data](#get-the-data), or pass
-`--excel <path>`.
-
-**`ModuleNotFoundError: No module named 'src'`** — run commands from the project
-root (`scripts/run_pipeline.py` and `app/streamlit_app.py` add the root to
-`sys.path` themselves, so `python scripts/run_pipeline.py` works from the root).
-
-**Streamlit says artifacts are missing** — run `python scripts/run_pipeline.py`
-first.
-
-**`xgboost` fails to import on macOS** — install the OpenMP runtime:
-`brew install libomp`.
 
 **Pipeline is slow / runs out of memory** — the Excel read is the bottleneck and
 needs ~2 GB free. Use `--no-market-basket` to skip the heaviest optional step,
